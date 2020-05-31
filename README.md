@@ -12,6 +12,8 @@ When I first tried to build this project in IntelliJ IDEA, I got a `release vers
 
 This is just a place to put code to try things out and to share ideas back and forth. It has a very simple [Hello World](src/main/java/org.example.sandbox/Hello.java) example that reads a text file and picks a random item from it.
 
+To run the Hello example from IntelliJ IDEA, look for `Hello.java` in the Project tree on the left, right click `Hello.java` and choose `Run 'Hello.main()'` from the popup menu. Alternatively, open up `Hello.java`, then choose `Run 'Hello'` from the `Run` main menu at the top.
+
 The project uses [Apache Maven](http://maven.apache.org/) as its build/dependecy system. Maven uses a file called [pom.xml](pom.xml) to define how to build the project. If you look at the [pom.xml](pom.xml) file in this folder, you'll see the list of libraries the project will download and compile with. The ones I included are:
 
 * JSoup - a library for parsing web pages
