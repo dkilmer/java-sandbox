@@ -1,8 +1,6 @@
 package org.ssanames.project;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,11 +10,14 @@ import java.sql.PreparedStatement;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+
 public class ParseBabyNames {
     private static final String COMMA_DELIM = ",";
 
     //method to establish connection to the database
     private Connection connect(String dbName){
+        String dataFile = "C://sqlite/db/" + dbName;
+        new File(dataFile).getParentFile().mkdirs();
         String url = "jdbc:sqlite:C://sqlite/db/" + dbName;
         Connection conn = null;
         try{
@@ -44,6 +45,7 @@ public class ParseBabyNames {
     public void createTable(String tableName, String dbName){
 
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + "(\n"
+                + " rank INTEGER, \n"
                 + " name text PRIMARY KEY NOT NULL, \n"
                 + " sex CHAR(1) NOT NULL, \n"
                 + " occurrence NUMERIC, \n"
@@ -65,12 +67,12 @@ public class ParseBabyNames {
     //method to parse txt file and load it into sql database
     public void loadTable(String year, String tableName, String dbName){
         
-        String sql = "INSERT INTO " + tableName + "(name,sex,occurrence,year) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO " + tableName + "(rank,name,sex,occurrence,year) VALUES (?,?,?,?,?)";
         List<List<String>> records = new ArrayList<>();
-        String fileName = "src/main/resources/names/yob" + year + ".txt";
-
+        String fileName = "/names/yob" + year + ".txt";
+        
         try {
-            BufferedReader br = new BufferedReader(new FileReader(fileName));
+            BufferedReader br = new BufferedReader(new InputStreamReader(ParseBabyNames.class.getResourceAsStream(fileName)));
             String line;
             while(( line = br.readLine()) != null) {
                 String[] values = line.split(COMMA_DELIM);
@@ -79,24 +81,27 @@ public class ParseBabyNames {
 
             //variable to limit the amount of records loaded into table
             int cnt = 0;
+            int rank_id = 1;
             //loads first 10 rows
-            while (cnt < 10){
+            while (cnt < 100){
                 String name = records.get(cnt).get(0);
                 String sex = records.get(cnt).get(1);
                 String occurrence = records.get(cnt).get(2);
 
                 try(Connection conn = this.connect(dbName);
                     PreparedStatement pstmt = conn.prepareStatement(sql)){
-                    pstmt.setString(1, name);
-                    pstmt.setString(2,sex);
-                    pstmt.setString(3, occurrence);
-                    pstmt.setString(4, year);
+                    pstmt.setInt(1,rank_id );
+                    pstmt.setString(2, name);
+                    pstmt.setString(3,sex);
+                    pstmt.setString(4, occurrence);
+                    pstmt.setString(5, year);
                     pstmt.executeUpdate();
-                    System.out.println("Values being inserted: " + name + ", " + sex + ", " + occurrence + ", " + year);
+                    //System.out.println("Values being inserted: " + name + ", " + sex + ", " + occurrence + ", " + year);
                 }catch (SQLException e){
                     System.out.println(e.getMessage());
                 }
                 ++cnt;
+                ++rank_id;
             }
             System.out.println(cnt + " rows inserted");
         } catch (IOException e) {
@@ -126,13 +131,66 @@ public class ParseBabyNames {
         }
     };
 
+    /*
+    This is a function that calculates the change in rank of a name between two years.
+    String prevYearTable corresponds to the table holding data for the previous or smallest year. String currYearTable corresponds to the
+    table holding data for the current or highest year.
+    */
+    public void getRankChange(String name, char sex, String prevYearTable, String currYearTable,  String dbName ){
+        //create sql statements to pull rank
+        String prevYearSql = "SELECT rank from " + prevYearTable + " where name=" + "'" + name + "'" + " and sex=" + "'" + sex + "'";
+        String currYearSql = "SELECT rank from " + currYearTable + " where name=" + "'" + name + "'" + " and sex=" + "'" + sex + "'";
+
+        //initialize rank variables
+        int prevRank = 0;
+        int currRank = 0;
+        int rankChg;
+
+        //get rank for prev year from table
+        try (Connection conn = this.connect(dbName);
+             Statement stmt1  = conn.createStatement();
+             ResultSet rs1    = stmt1.executeQuery(prevYearSql)){
+            // loop through the result set
+            while (rs1.next()) {
+                prevRank = rs1.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+
+        //get rank for curr year from table
+        try (Connection conn = this.connect(dbName);
+             Statement stmt2  = conn.createStatement();
+             ResultSet rs2   = stmt2.executeQuery(currYearSql)){
+            // loop through the result set
+            while (rs2.next()) {
+                currRank = rs2.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        //calculate change in rank
+        rankChg = currRank - prevRank;
+
+        //print rank change
+        if(rankChg == 0){
+            System.out.println("Name " + name.toUpperCase() + " has not changed in rank");
+        }else if(rankChg > 0 ){
+            System.out.println("Name " + name.toUpperCase() + " has decreased in rank by " + rankChg);
+        }else{
+            System.out.println("Name " + name.toUpperCase() + " has increased in rank by " + Math.abs(rankChg));
+        }
+    }
 
     public static void main(String[] args){
-//        ParseBabyNames pb = new ParseBabyNames();
-//        pb.createDatabase("SsaNames3.db");
-//        pb.createTable("Yob2017", "SsaNames3.db");
-//        pb.loadTable("2017", "Yob2017","SsaNames3.db");
-//        pb.selectAll("Yob2017", "SsaNames3.db");
+        ParseBabyNames pb = new ParseBabyNames();
+//        pb.createDatabase("SsaNames.db");
+//        pb.createTable("Ssa2018", "SsaNames.db");
+//        pb.loadTable("2018", "Ssa2018","SsaNames.db");
+//        pb.createTable("Ssa2017", "SsaNames.db");
+//        pb.loadTable("2017", "Ssa2017","SsaNames.db");
+//        pb.selectAll("Ssa2017", "SsaNames.db");
+        pb.getRankChange("Kaylee",'F', "Ssa2017","Ssa2018",  "SsaNames.db");
     }
 
 }
