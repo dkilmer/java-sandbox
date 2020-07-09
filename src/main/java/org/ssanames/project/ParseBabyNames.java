@@ -13,6 +13,15 @@ import java.sql.SQLException;
 
 public class ParseBabyNames {
     private static final String COMMA_DELIM = ",";
+    private String dbName;
+
+    public ParseBabyNames(String dbName){
+        this.dbName = dbName;
+    }
+
+    public String getDBName(){
+        return this.dbName;
+    }
 
     //method to establish connection to the database
     private Connection connect(String dbName){
@@ -29,8 +38,8 @@ public class ParseBabyNames {
     }
 
     //method that creates database in C:/sqlite folder
-    public void createDatabase(String dbName){
-        try(Connection conn = this.connect(dbName)){
+    public void createDatabase(){
+        try(Connection conn = this.connect(this.dbName)){
             if (conn != null){
                 DatabaseMetaData meta = conn.getMetaData();
                 System.out.println("The driver name is " + meta.getDriverName());
@@ -42,7 +51,7 @@ public class ParseBabyNames {
     };
 
     //method that creates table in specified database
-    public void createTable(String tableName, String dbName){
+    public void createTable(String tableName){
 
         String sql = "CREATE TABLE IF NOT EXISTS " + tableName + "(\n"
                 + " rank INTEGER, \n"
@@ -52,25 +61,24 @@ public class ParseBabyNames {
                 + " year      NUMERIC\n"
                 + ");";
 
-        try(Connection conn = this.connect(dbName)){
+        try(Connection conn = this.connect(this.dbName)){
             if (conn != null){
                 Statement stmt = conn.createStatement();
                 stmt.execute(sql);
                 System.out.println("Table " + tableName + " created...");
-                }
+            }
         } catch(SQLException e){
             System.out.println(e.getMessage());
         }
     };
 
-
     //method to parse txt file and load it into sql database
-    public void loadTable(String year, String tableName, String dbName){
-        
+    public void loadTable(String year, String tableName){
+
         String sql = "INSERT INTO " + tableName + "(rank,name,sex,occurrence,year) VALUES (?,?,?,?,?)";
         List<List<String>> records = new ArrayList<>();
         String fileName = "/names/yob" + year + ".txt";
-        
+
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(ParseBabyNames.class.getResourceAsStream(fileName)));
             String line;
@@ -110,20 +118,20 @@ public class ParseBabyNames {
     };
 
     //method returns all records in specified table and database
-    public void selectAll(String tableName, String dbName){
+    public void selectAll(String tableName){
         String sql = "SELECT name,sex,occurrence,year from " + tableName;
 
-        try (Connection conn = this.connect(dbName);
+        try (Connection conn = this.connect(this.dbName);
              Statement stmt  = conn.createStatement();
              ResultSet rs    = stmt.executeQuery(sql)){
 
             // loop through the result set
             while (rs.next()) {
                 System.out.println(
-                    rs.getString("name") + "\t" +
-                    rs.getString("sex") + "\t" +
-                    rs.getInt("occurrence") + "\t" +
-                    rs.getInt("year")
+                        rs.getString("name") + "\t" +
+                                rs.getString("sex") + "\t" +
+                                rs.getInt("occurrence") + "\t" +
+                                rs.getInt("year")
                 );
             };
         } catch (SQLException e) {
@@ -136,7 +144,7 @@ public class ParseBabyNames {
     String prevYearTable corresponds to the table holding data for the previous or smallest year. String currYearTable corresponds to the
     table holding data for the current or highest year.
     */
-    public void getRankChange(String name, char sex, String prevYearTable, String currYearTable,  String dbName ){
+    public void getRankChange(String name, char sex, String prevYearTable, String currYearTable){
         //create sql statements to pull rank
         String prevYearSql = "SELECT rank from " + prevYearTable + " where name=" + "'" + name + "'" + " and sex=" + "'" + sex + "'";
         String currYearSql = "SELECT rank from " + currYearTable + " where name=" + "'" + name + "'" + " and sex=" + "'" + sex + "'";
@@ -147,7 +155,7 @@ public class ParseBabyNames {
         int rankChg;
 
         //get rank for prev year from table
-        try (Connection conn = this.connect(dbName);
+        try (Connection conn = this.connect(this.dbName);
              Statement stmt1  = conn.createStatement();
              ResultSet rs1    = stmt1.executeQuery(prevYearSql)){
             // loop through the result set
@@ -159,7 +167,7 @@ public class ParseBabyNames {
         }
 
         //get rank for curr year from table
-        try (Connection conn = this.connect(dbName);
+        try (Connection conn = this.connect(this.dbName);
              Statement stmt2  = conn.createStatement();
              ResultSet rs2   = stmt2.executeQuery(currYearSql)){
             // loop through the result set
@@ -183,14 +191,12 @@ public class ParseBabyNames {
     }
 
     public static void main(String[] args){
-        ParseBabyNames pb = new ParseBabyNames();
-//        pb.createDatabase("SsaNames.db");
-//        pb.createTable("Ssa2018", "SsaNames.db");
-//        pb.loadTable("2018", "Ssa2018","SsaNames.db");
-//        pb.createTable("Ssa2017", "SsaNames.db");
-//        pb.loadTable("2017", "Ssa2017","SsaNames.db");
-//        pb.selectAll("Ssa2017", "SsaNames.db");
-        pb.getRankChange("Kaylee",'F', "Ssa2017","Ssa2018",  "SsaNames.db");
+        ParseBabyNames pb = new ParseBabyNames("SsaNames.db");
+        //pb.createDatabase();
+        pb.createTable("Ssa2015");
+        pb.loadTable("2015", "Ssa2015");
+        //pb.selectAll("Ssa2016");
+        pb.getRankChange("Aubrey",'F', "Ssa2017","Ssa2018");
     }
 
 }
