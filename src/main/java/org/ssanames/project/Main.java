@@ -9,9 +9,8 @@ public class Main {
         try {
         ParseBabyNames pb = new ParseBabyNames("SsaNames.db");
         NamesAnalysis na = new NamesAnalysis("SsaNames.db");
-        pb.createTable(2014);
-        pb.loadTable(2016, 20);
-        pb.loadTable(2014,10);
+        pb.createTable(2010);
+        pb.loadTable(2010);
         na.getRankChange("Madison", 'F', 2017, 2018);
         } catch (IOException ie){
             System.err.println("I/O error: " + ie.getMessage());
