@@ -9,13 +9,12 @@ public class Main {
         try {
         ParseBabyNames pb = new ParseBabyNames("SsaNames.db");
         NamesAnalysis na = new NamesAnalysis("SsaNames.db");
-        pb.createTable(2010);
-        pb.loadTable(2010);
-        na.getRankChange("Madison", 'F', 2017, 2018);
-        } catch (IOException ie){
+        //pb.createTable(2010);
+        //pb.loadTable(2010);
+        //na.getRankChange("Madison", 'F', 2017, 2018);
+        na.LineChart("Devonna", 'F');
+        } catch (IOException ie) {
             System.err.println("I/O error: " + ie.getMessage());
-        } catch (SQLException se){
-            System.err.println("SQL error "+ se.getMessage());
         }
     }
 }
