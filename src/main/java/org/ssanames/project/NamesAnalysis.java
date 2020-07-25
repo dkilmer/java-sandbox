@@ -179,6 +179,7 @@ public class NamesAnalysis {
 
     public void LineChart(String name, char sex) throws IOException {
         String title = "Popularity of Name: " + name.toUpperCase() + " Over Time";
+        String userDir = System.getProperty("user.dir");
         DefaultCategoryDataset lineChartDate = new DefaultCategoryDataset();
         HashMap<Integer, Integer> nameData = getPopularity(name, sex);
 
@@ -192,9 +193,11 @@ public class NamesAnalysis {
 
         int width = 800;
         int height = 800;
-        File lineChart = new File( "images/" + name+ "_Occur_Over_Time.jpeg" );
-        ChartUtils.saveChartAsJPEG(lineChart ,lineChartObj, width ,height);
 
+        File newDir = new File(userDir + "/images/");
+        newDir.mkdir();
+        File lineChart = new File( userDir + "/images/" + name + "_Occur_Over_Time.jpeg" );
+        ChartUtils.saveChartAsJPEG(lineChart ,lineChartObj, width ,height);
     }
 
 }
