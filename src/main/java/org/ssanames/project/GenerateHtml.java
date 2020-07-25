@@ -13,12 +13,12 @@ public class GenerateHtml {
     public void GenerateHtml(String name) throws IOException {
         //initializes image Name and directory where image is saved and html will be saved
         String imageName = name + "_Occur_Over_Time.jpeg";
-        String pathName = System.getProperty("user.dir") + "/images/";
+        String pathName = System.getProperty("user.dir") + "\\images\\";
 
         //generates html with image object
         String html = "<html><head><title>Plot of popularity for name: " + name.toUpperCase() + "</title></head>"
                 + "<body>"
-                + "<div id='image-div'><img src=\"C:/Users/Devonna/Desktop/DE_Projects/java-sandbox/images/" + imageName + "\""
+                + "<div id='image-div'><img src="+ pathName + imageName + ">"
                 + "</div>"
                 + "</body></html>";
 
@@ -35,6 +35,4 @@ public class GenerateHtml {
         }
     }
 }
-
-
 
