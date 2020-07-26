@@ -26,7 +26,7 @@ public class GenerateHtml {
 
         //writes html file to directory
         try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(pathName + "popularity_plot.html"));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(pathName + name.toLowerCase() +"_popularity_plot.html"));
             writer.write(document.toString());
             writer.close();
         }catch (IOException e){
