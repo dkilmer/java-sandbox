@@ -21,6 +21,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import  java.util.*;
 
 public class NamesAnalysis {
 
@@ -43,7 +44,7 @@ public class NamesAnalysis {
         return conn;
     }
 
-    public static List<String> getYearsAvail() {
+    public int getMaxYear() {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         URL url = loader.getResource("SSAData");
         String path = url.getPath();
@@ -56,7 +57,8 @@ public class NamesAnalysis {
             }
             years.add(file.substring(3, 7));
         }
-        return years;
+        int maxYear = Integer.parseInt(Collections.max(years));
+        return maxYear;
     }
 
     /*
@@ -165,14 +167,9 @@ public class NamesAnalysis {
     public HashMap getPopularity(String name, char sex) throws IOException {
         HashMap<Integer, Integer> occurMap = new HashMap<>();
         int firstYearOccur = nameFirstListed(name,sex);
-        int stopYear = 2018;
+        int stopYear = getMaxYear();
         for(int i = firstYearOccur; i <= stopYear; i++){
             occurMap.put(i,getOccurenceVal(name,sex,i));
-        }
-        for(Integer keyVal : occurMap.keySet()){
-            //int key = keyVal;
-            int value = occurMap.get(keyVal);
-            System.out.println("Key: " + keyVal + "\t" + "Value: " + value);
         }
         return occurMap;
     }
@@ -195,9 +192,13 @@ public class NamesAnalysis {
         int height = 800;
 
         File newDir = new File(userDir + "/images/");
-        newDir.mkdir();
-        File lineChart = new File( userDir + "/images/" + name + "_Occur_Over_Time.jpeg" );
-        ChartUtils.saveChartAsJPEG(lineChart ,lineChartObj, width ,height);
+
+        if(!newDir.exists()) {
+            System.out.println("Creating images directory...");
+            newDir.mkdir();
+        }
+            File lineChart = new File(userDir + "/images/" + name + "_Occur_Over_Time.jpeg");
+            ChartUtils.saveChartAsJPEG(lineChart, lineChartObj, width, height);
     }
 
 }
