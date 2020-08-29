@@ -1,27 +1,23 @@
 package org.ssanames.project;
 
 import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.CategoryAxis;
+import org.jfree.chart.axis.CategoryLabelPositions;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.chart.ui.ApplicationFrame;
 import org.jfree.chart.ChartUtils;
 
-import org.jfree.chart.ChartFrame;
-import javax.swing.JFrame;
-import org.jfree.data.xy.XYDataset;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.awt.*;
+import java.io.*;
 import java.net.URL;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import  java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NamesAnalysis {
 
@@ -49,16 +45,15 @@ public class NamesAnalysis {
         URL url = loader.getResource("SSAData");
         String path = url.getPath();
         String filesList[] = new File(path).list();
-        List<String> years = new ArrayList<>();
+        Set<Integer> years = new HashSet<>();
         //System.out.println(files.length);
         for (String file : filesList) {
             if (file.charAt(0) == 'N') {
                 continue;
             }
-            years.add(file.substring(3, 7));
+            years.add(Integer.parseInt(file.substring(3, 7)));
         }
-        int maxYear = Integer.parseInt(Collections.max(years));
-        return maxYear;
+        return Collections.max(years);
     }
 
     /*
@@ -121,15 +116,31 @@ public class NamesAnalysis {
         //gets list of database files available in project
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         URL url = loader.getResource("SSAData");
-        String filesList[] = new File(url.getPath()).list();
+        // the files we want to look at have the following name pattern
+        Pattern fileNamePattern = Pattern.compile("yob\\d{4}\\.txt");
+        // get the files, keeping only those that match the pattern (and are files)
+        String filesArray[] = new File(url.getPath())
+          .list((file, s) -> (new File(file, s).isFile() && fileNamePattern.matcher(s).matches()));
+/*
+        // the code above is equivalent to the following...
+        String filesArray[] = new File(url.getPath())
+          .list(new FilenameFilter() {
+              @Override
+              public boolean accept(File file, String s) {
+                  return (new File(file, s).isFile() && fileNamePattern.matcher(s).matches());
+              }
+          });
+*/
+        // Turn the array of files into a list so we can sort it by file name
+        List<String> filesList = Arrays.asList(Objects.requireNonNull(filesArray));
+        // Make sure our files are sorted by year (Sorts in normal string order).
+        // File.list() does not guarantee alphabetical order (see https://docs.oracle.com/javase/8/docs/api/java/io/File.html#list--)
+        filesList.sort(Comparator.naturalOrder());
 
         String firstYear = null;
 
         searchLoop:
         for (String fileName : filesList) {
-            if (fileName.charAt(0) == 'N') {
-                continue;
-            }
             BufferedReader br = new BufferedReader(new InputStreamReader(ParseBabyNames.class.getResourceAsStream("/SSAData/" + fileName)));
             String line;
             //System.out.println(fileName);
@@ -143,6 +154,7 @@ public class NamesAnalysis {
             }
         }
         //System.out.println(firstYear);
+        if (firstYear == null) throw new IOException("Name "+name+" ("+sex+") was not found in the database");
         return Integer.parseInt(firstYear);
     }
 
@@ -164,7 +176,7 @@ public class NamesAnalysis {
         return occurVal;
     }
 
-    public HashMap getPopularity(String name, char sex) throws IOException {
+    public HashMap<Integer,Integer> getPopularity(String name, char sex) throws IOException {
         HashMap<Integer, Integer> occurMap = new HashMap<>();
         int firstYearOccur = nameFirstListed(name,sex);
         int stopYear = getMaxYear();
@@ -175,7 +187,7 @@ public class NamesAnalysis {
     }
 
     public void LineChart(String name, char sex) throws IOException {
-        String title = "Popularity of Name: " + name.toUpperCase() + " Over Time";
+        String title = "Popularity of Name: " + name.toUpperCase() + " ("+sex+") Over Time";
         String userDir = System.getProperty("user.dir");
         DefaultCategoryDataset lineChartDate = new DefaultCategoryDataset();
         HashMap<Integer, Integer> nameData = getPopularity(name, sex);
@@ -187,6 +199,22 @@ public class NamesAnalysis {
         JFreeChart lineChartObj  = ChartFactory.createLineChart(title, "Year",
                 "Occurrence", lineChartDate,PlotOrientation.VERTICAL, true, true, false
         );
+
+        // remove the legend since we're only plotting one name
+        lineChartObj.removeLegend();
+        // get the x axis of the chart (years)
+        CategoryAxis xaxis = lineChartObj.getCategoryPlot().getDomainAxis();
+        // make the year label text vertical to make more space
+        xaxis.setCategoryLabelPositions(CategoryLabelPositions.DOWN_90);
+        // transparent white
+        Color c = new Color(255, 255, 255, 0);
+        for(Integer keyVal: nameData.keySet()) {
+            // Hack - set the label to be transparent if the year isn't an even decade.
+            // This makes the chart more readable, since otherwise year text would overlap.
+            if ((keyVal % 10) != 0) {
+                xaxis.setTickLabelPaint(keyVal, c);
+            }
+        }
 
         int width = 800;
         int height = 800;
